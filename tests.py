@@ -1,18 +1,11 @@
-import pytest
-
-from db import dump
+from conftest import dump_db_at_failure
 
 
-def dump_db(test):
-    def wrapper(*args, **kwargs):
-        try:
-            test(*args, **kwargs)
-        except AssertionError:
-            dump()
-            raise
-    return wrapper
+@dump_db_at_failure
+def test_1():
+    assert True
 
 
-@dump_db
-def test_pg():
+@dump_db_at_failure
+def test_2():
     assert False

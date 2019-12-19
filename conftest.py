@@ -1,43 +1,39 @@
 import pytest
 import docker
 
-
-@pytest.fixture(scope='session')
-def docker_client():
-    return docker.from_env()
+from db import dump
 
 
-@pytest.yield_fixture(scope='session', autouse=True)
-def postgresql(docker_client):
-    image = docker_client.images.pull('postgres:latest')
-    container = docker_client.containers.create(
-        image=image, network='host', auto_remove=True, name='pg_fixture'
-    )
-    container.start()
-    yield container
-    container.stop()
-
-
-# @pytest.hookimpl(tryfirst=True, hookwrapper=True)
-# def pytest_runtest_makereport(item, call):
-#     # execute all other hooks to obtain the report object
-#     outcome = yield
-#     rep = outcome.get_result()
-#
-#     # set a report attribute for each phase of a call, which can
-#     # be "setup", "call", "teardown"
-#
-#     setattr(item, "rep_" + rep.when, rep)
+# @pytest.fixture(scope='session')
+# def docker_client():
+#     return docker.from_env()
 #
 #
-# @pytest.fixture
-# def something(request):
-#     yield
-#     # request.node is an "item" because we use the default
-#     # "function" scope
-#     if request.node.rep_setup.failed:
-#         print("setting up a test failed!", request.node.nodeid)
-#     elif request.node.rep_setup.passed:
-#         if request.node.rep_call.failed:
-#             print("executing test failed", request.node.nodeid)
+# @pytest.yield_fixture(scope='session', autouse=True)
+# def postgresql(docker_client):
+#     image = docker_client.images.pull('postgres:latest')
+#     container = docker_client.containers.create(
+#         image=image, network='host', auto_remove=True, name='pg_fixture'
+#     )
+#     container.start()
+#     yield container
+#     container.stop()
 
+
+# Проверка для каждого обёрнутого теста
+def dump_db_at_failure(test):
+    def wrapper(*args, **kwargs):
+        try:
+            test(*args, **kwargs)
+        except AssertionError:
+            dump()
+            raise
+    return wrapper
+
+
+# Проверка для сессии
+@pytest.fixture(scope="module", autouse=True)
+def failure_tracking_fixture(request):
+    init = request.session.testsfailed
+    yield
+    print('OK session check should be 0, but it is', request.session.testsfailed - init)
