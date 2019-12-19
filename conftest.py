@@ -2,14 +2,14 @@ import pytest
 import docker
 
 
-@pytest.fixture
+@pytest.fixture(scope='session')
 def docker_client():
     return docker.from_env()
 
 
-@pytest.yield_fixture(autouse=True)
+@pytest.yield_fixture(scope='session', autouse=True)
 def postgresql(docker_client):
-    image, _ = docker_client.images.pull('postgres')
+    image = docker_client.images.pull('postgres:latest')
     container = docker_client.containers.create(
         image=image, network='host', auto_remove=True
     )
