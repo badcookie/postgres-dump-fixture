@@ -85,7 +85,7 @@ def dump_db(conn):
     db_name = db_meta["current_database"]
     current_datetime = datetime.now().isoformat(timespec="seconds")
 
-    dump_dirname = f"{db_name}_dump_{current_datetime}"
+    dump_dirname = f"dump_{db_name}_{current_datetime}"
     try:
         os.mkdir(dump_dirname)
     except Exception:
