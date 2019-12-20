@@ -16,9 +16,15 @@ def docker_client():
 
 @pytest.yield_fixture(scope="session", autouse=True)
 def postgresql(docker_client):
+    containers = docker_client.containers.list()
+    runner_container = [*filter(lambda item: "runner" in item.name, containers)]
+    network = (
+        "host" if not runner_container else f"container:/{runner_container[0].name}"
+    )
+
     image = docker_client.images.pull("postgres:latest")
     container = docker_client.containers.create(
-        image=image, network="host", auto_remove=True
+        image=image, network=network, auto_remove=True
     )
     container.start()
     yield container
