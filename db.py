@@ -24,12 +24,6 @@ tables = {
 }
 
 
-def get_str_tuple_values(row):
-    values = row.values()
-    str_values = map(str, values)
-    return tuple(str_values)
-
-
 def get_sql_table_description(column):
     name, data_type = column
     return f"{name} {data_type}"
@@ -67,26 +61,47 @@ get_all_table_names = """
 get_db_meta = "SELECT current_database();"
 
 
-def dump_db(conn):
+def convert_values_to_string_and_store_in_tuple(row):
+    values = row.values()
+    return tuple(map(str, values))
+
+
+def get_existing_tables(conn):
     conn.execute(get_all_table_names)
     tables_meta = conn.fetchall()
-    table_names = [*map(lambda t: t["table_name"], tables_meta)]
+    return map(lambda t: t["table_name"], tables_meta)
 
+
+def get_current_db_name(conn):
     conn.execute(get_db_meta)
     (db_meta,) = conn.fetchall()
-    db_name = db_meta["current_database"]
-    current_datetime = datetime.now().isoformat(timespec="seconds")
+    return db_meta["current_database"]
 
+
+def get_table_data(conn, table_name):
+    query = SQL("SELECT * from {}").format(Identifier(table_name))
+    conn.execute(query)
+    return conn.fetchall()
+
+
+def prepare_csv_dump_data(table_data):
+    rows = map(convert_values_to_string_and_store_in_tuple, table_data)
+    csv_rows = map(lambda row: ",".join(row), rows)
+    return "\n".join(csv_rows)
+
+
+def dump_db(conn):
+    table_names = get_existing_tables(conn)
+    db_name = get_current_db_name(conn)
+
+    current_datetime = datetime.now().isoformat(timespec="seconds")
     dump_dirname = f"dump_{db_name}_{current_datetime}"
     os.mkdir(dump_dirname)
 
     for table_name in table_names:
-        get_table_data = SQL("SELECT * from {}").format(Identifier(table_name))
-        conn.execute(get_table_data)
-        table_data = conn.fetchall()
+        table_data = get_table_data(conn, table_name)
 
-        with open(f"{dump_dirname}/{table_name}.csv", "w") as dump_file:
-            rows = [*map(get_str_tuple_values, table_data)]
-            csv_rows = map(lambda tup: ",".join(tup), rows)
-            data_to_write = "\n".join(csv_rows)
-            dump_file.write(data_to_write)
+        dump_file_name = f"{dump_dirname}/{table_name}.csv"
+        with open(dump_file_name, "w") as file:
+            data = prepare_csv_dump_data(table_data)
+            file.write(data)

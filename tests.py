@@ -4,7 +4,7 @@ from db import setup_db
 from conftest import dump_db_at_failure
 
 
-@dump_db_at_failure
+# @dump_db_at_failure
 def test_failure_dump(db_connection):
     setup_db(db_connection)
     assert False
