@@ -2,6 +2,10 @@ import os
 from datetime import datetime
 from psycopg2.sql import SQL, Identifier, Literal
 
+# TODO:
+# 1. Форматирование запросов
+# 2. Исключения
+
 
 tables = {
     'druid': {
@@ -42,7 +46,6 @@ def setup_db(conn):
 
         data = fixtures['data']
         for row in data:
-            # formatted_row = ', '.join(map(get_values_to_insert, row))
             columns_except_pk = list(columns.keys())[1:]
             columns_names = SQL(', ').join(map(Identifier, columns_except_pk))
             columns_values = SQL(', ').join(map(Literal, row))
@@ -68,37 +71,29 @@ get_all_table_names = """
 get_db_meta = "SELECT current_database();"
 
 
-DIRNAME = None
-
-
 def dump_db(conn):
+    conn.execute(get_all_table_names)
+    tables_meta = conn.fetchall()
+    table_names = [*map(lambda t: t['table_name'], tables_meta)]
+
+    conn.execute(get_db_meta)
+    db_meta, = conn.fetchall()
+    db_name = db_meta['current_database']
+    current_datetime = datetime.now().isoformat(timespec='seconds')
+
+    dump_dirname = f'{db_name}_dump_{current_datetime}'
     try:
-        conn.execute(get_all_table_names)
-        tables_meta = conn.fetchall()
-        table_names = [*map(lambda t: t['table_name'], tables_meta)]
+        os.mkdir(dump_dirname)
+    except Exception:
+        print('Oops.')
 
-        conn.execute(get_db_meta)
-        db_meta, = conn.fetchall()
-        db_name = db_meta['current_database']
-        current_datetime = datetime.now().isoformat(timespec='seconds')
+    for table_name in table_names:
+        get_table_data = SQL("SELECT * from {}").format(Identifier(table_name))
+        conn.execute(get_table_data)
+        table_data = conn.fetchall()
 
-        dump_dirname = f'{db_name}_dump_{current_datetime}'
-        global DIRNAME
-        DIRNAME = dump_dirname
-        try:
-            os.mkdir(dump_dirname)
-        except Exception:
-            print('Oops.')
-
-        for table_name in table_names:
-            get_table_data = SQL("SELECT * from {}").format(Identifier(table_name))
-            conn.execute(get_table_data)
-            table_data = conn.fetchall()
-
-            with open(f"{dump_dirname}/{table_name}.csv", "w") as dump_file:
-                rows = [*map(get_str_tuple_values, table_data)]
-                csv_rows = map(lambda tup: ','.join(tup), rows)
-                data_to_write = '\n'.join(csv_rows)
-                dump_file.write(data_to_write)
-    except Exception as e:
-        print(e)
+        with open(f"{dump_dirname}/{table_name}.csv", "w") as dump_file:
+            rows = [*map(get_str_tuple_values, table_data)]
+            csv_rows = map(lambda tup: ','.join(tup), rows)
+            data_to_write = '\n'.join(csv_rows)
+            dump_file.write(data_to_write)
