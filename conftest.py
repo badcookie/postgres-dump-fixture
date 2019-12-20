@@ -39,7 +39,7 @@ def db_connection():
 def dump_db_at_failure(test):
     @wraps(test)
     def wrapper(*args, **kwargs):
-        connection = kwargs.get('db_connection')
+        connection = kwargs.get("db_connection")
         try:
             test(*args, **kwargs)
         except AssertionError:
