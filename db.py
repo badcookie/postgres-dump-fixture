@@ -2,10 +2,6 @@ import os
 from datetime import datetime
 from psycopg2.sql import SQL, Identifier, Literal
 
-# TODO:
-# 1. Форматирование запросов
-# 2. Исключения
-
 
 tables = {
     "druid": {
@@ -39,12 +35,6 @@ def get_sql_table_description(column):
     return f"{name} {data_type}"
 
 
-def get_values_to_insert(value):
-    if isinstance(value, str):
-        return f'"{value}"'
-    return str(value)
-
-
 def setup_db(conn):
     for table_name, fixtures in tables.items():
         columns = fixtures["description"]
@@ -53,10 +43,12 @@ def setup_db(conn):
         create_table = "CREATE TABLE {} ({})".format(table_name, description)
         conn.execute(create_table)
 
+        columns_except_pk = dict(columns)
+        columns_except_pk.pop('id')
+
         data = fixtures["data"]
         for row in data:
-            columns_except_pk = list(columns.keys())[1:]
-            columns_names = SQL(", ").join(map(Identifier, columns_except_pk))
+            columns_names = SQL(", ").join(map(Identifier, columns_except_pk.keys()))
             columns_values = SQL(", ").join(map(Literal, row))
 
             insert_row = SQL("INSERT INTO {} ({}) VALUES ({})").format(
@@ -86,10 +78,7 @@ def dump_db(conn):
     current_datetime = datetime.now().isoformat(timespec="seconds")
 
     dump_dirname = f"dump_{db_name}_{current_datetime}"
-    try:
-        os.mkdir(dump_dirname)
-    except Exception:
-        print("Oops.")
+    os.mkdir(dump_dirname)
 
     for table_name in table_names:
         get_table_data = SQL("SELECT * from {}").format(Identifier(table_name))
