@@ -101,7 +101,7 @@ def dump_db(conn):
     for table_name in table_names:
         table_data = get_table_data(conn, table_name)
 
-        dump_file_name = f"{dump_dirname}/{table_name}.csv"
+        dump_file_name = os.path.join(dump_dirname, f"{table_name}.csv")
         with open(dump_file_name, "w") as file:
             data = prepare_csv_dump_data(table_data)
             file.write(data)
