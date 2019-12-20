@@ -4,16 +4,16 @@ import docker
 from db import dump
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="session")
 def docker_client():
     return docker.from_env()
 
 
-@pytest.yield_fixture(scope='session', autouse=True)
+@pytest.yield_fixture(scope="session", autouse=True)
 def postgresql(docker_client):
-    image = docker_client.images.pull('postgres:latest')
+    image = docker_client.images.pull("postgres:latest")
     container = docker_client.containers.create(
-        image=image, network='host', auto_remove=True
+        image=image, network="host", auto_remove=True
     )
     container.start()
     yield container
@@ -28,12 +28,13 @@ def dump_db_at_failure(test):
         except AssertionError:
             dump()
             raise
+
     return wrapper
 
 
 # Проверка для сессии
-@pytest.fixture(scope="module", autouse=True)
-def failure_tracking_fixture(request):
-    init = request.session.testsfailed
+@pytest.fixture(scope="session", autouse=True)
+def session_failure_tracker(request):
     yield
-    print('OK session check should be 0, but it is', request.session.testsfailed - init)
+    if request.session.testsfailed:
+        dump()
