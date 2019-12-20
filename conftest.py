@@ -6,7 +6,7 @@ from functools import wraps
 import psycopg2
 from psycopg2.extras import RealDictCursor
 
-from db import dump_db
+from db import dump_db, fill_db
 
 
 @pytest.fixture(scope="session")
@@ -35,11 +35,16 @@ def db_connection():
     conn.close()
 
 
+@pytest.fixture(scope="session")
+def db_setup(db_connection):
+    fill_db(db_connection)
+
+
 # Проверка для каждого обёрнутого теста
 def dump_db_at_failure(test):
     @wraps(test)
     def wrapper(*args, **kwargs):
-        connection = kwargs.get("db_connection")
+        connection = kwargs.get("db_connection", args[0])
         try:
             test(*args, **kwargs)
         except AssertionError:

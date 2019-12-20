@@ -29,7 +29,7 @@ def get_sql_table_description(column):
     return f"{name} {data_type}"
 
 
-def setup_db(conn):
+def fill_db(conn):
     for table_name, fixtures in tables.items():
         columns = fixtures["description"]
         description = ", ".join(map(get_sql_table_description, columns.items()))
