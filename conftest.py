@@ -35,11 +35,6 @@ def db_connection():
     conn.close()
 
 
-@pytest.fixture(scope="session")
-def db_setup(db_connection):
-    fill_db(db_connection)
-
-
 # Проверка для каждого обёрнутого теста
 def dump_db_at_failure(test):
     @wraps(test)
@@ -54,9 +49,9 @@ def dump_db_at_failure(test):
     return wrapper
 
 
-# Проверка для сессии
-@pytest.fixture(scope="session", autouse=True)
-def session_failure_tracker(request, db_connection):
-    yield
-    if request.session.testsfailed:
-        dump_db(db_connection)
+# # Проверка для сессии
+# @pytest.fixture(scope="session", autouse=True)
+# def session_failure_tracker(request, db_connection):
+#     yield
+#     if request.session.testsfailed:
+#         dump_db(db_connection)
