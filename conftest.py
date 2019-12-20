@@ -6,7 +6,7 @@ from functools import wraps
 import psycopg2
 from psycopg2.extras import RealDictCursor
 
-from db import dump_db, fill_db
+from db import dump_db
 
 
 @pytest.fixture(scope="session")
@@ -33,6 +33,7 @@ def postgresql(docker_client):
 
 @pytest.fixture(scope="session")
 def db_connection():
+    sleep(5)   # Без засыпания не можем подключиться, так как база не успевает стартовать
     conn = psycopg2.connect(database="postgres", user="postgres", host="localhost")
     cursor = conn.cursor(cursor_factory=RealDictCursor)
     yield cursor
