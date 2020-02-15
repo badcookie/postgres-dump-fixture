@@ -1,1 +1,1 @@
-#### Postgres docker fixture with dump at test failure
+#### Postgres docker fixture with database dump at test failure
